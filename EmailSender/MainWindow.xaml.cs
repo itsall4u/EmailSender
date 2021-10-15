@@ -31,6 +31,12 @@ namespace EmailSender
     {
         private ConcurrentBag<KeyValuePair<string, string>> ListOfErrors = new ConcurrentBag<KeyValuePair<string, string>>();
         private readonly BackgroundWorker bgworker = new BackgroundWorker();
+        private string LogFile = @"D:\log.txt";
+        private string SendError = string.Empty;
+        private Sender CurrentSender;
+        private SmtpClient smtp;
+        private int Delay = 200;
+        private string AttachmentFileName = string.Empty;
         private string SubjectText;
         private string LetterText;
         private string filename;
@@ -62,6 +68,10 @@ namespace EmailSender
         {
             LetterText = Text.Text;
             SubjectText = Subject.Text;
+            AttachmentFileName = AttachmentBOX.Text;
+            CurrentSender = new Sender("Кафедра ФН-3", EmailAdressBOX.Text, PSWDBOX.Password);
+            if (!string.IsNullOrEmpty(DelayBox.Text)) Delay = int.Parse(DelayBox.Text);
+            smtp = new SmtpClient(SMTPBox.Text, int.Parse(PortBox.Text));
             var dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.FileName = "Excel Document"; // Default file name
             dialog.DefaultExt = ".xlsx"; // Default file extension
@@ -88,7 +98,7 @@ namespace EmailSender
             lblStatus.Text = "Отправлено" + " (" + e.ProgressPercentage + "%)";
             pb1.Value = e.ProgressPercentage;
         }
-        async void Worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        void Worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             bgworker.DoWork -= Worker_DoWork;
             bgworker.ProgressChanged -= Worker_ProgressChanged;
@@ -104,16 +114,33 @@ namespace EmailSender
                 lblStatus.Text = "Выполнено: " + e.Result;
                 if (ListOfErrors.Count > 0)
                 {
-                    StreamWriter sw = new StreamWriter(@"D:\Test\log.txt");
-                    //Write a line of text
-                    foreach (KeyValuePair<string, string> error in ListOfErrors)
+                    try
                     {
-                        sw.WriteLine( error.Key + " " + error.Value);
+                        
+                        foreach (KeyValuePair<string, string> error in ListOfErrors)
+                        {
+                            SendError = error.Key;
+                            SendError += '\n';
+                        }
+                       
+                        StreamWriter sw = new StreamWriter(LogFile);
+                        //Write a line of text
+                        sw.WriteLine(SendError);
+                        //Close the file
+                        sw.Close();
+                        MessageBox.Show("Во время отправки возникли ошибки.\nНекоторые пиьсма не были отправлены.\nСписок адресов, которым сообщение не было доставлено - " + LogFile, "Ошибка", MessageBoxButton.OK);
                     }
-                    //Close the file
-                    sw.Close();
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Во время записи файла произошла ошибка\n" + ex.Message, "Ошибка", MessageBoxButton.OK);
+                    }
+                    finally
+                    {
+                        Clipboard.SetText(SendError);
+                        MessageBox.Show("Список адресов, которым сообщение не было доставлено\n" + SendError +"\nСписок адресов скопирован в буфер обмена.", "Ошибка", MessageBoxButton.OK);
+                    }
                 }
-                MessageBox.Show("Успешно отправлено", "Отчет", MessageBoxButton.OK);
+                else MessageBox.Show("Успешно отправлено", "Отчет", MessageBoxButton.OK);
             }
         }
         void Worker_DoWork(object sender, DoWorkEventArgs e)
@@ -125,7 +152,6 @@ namespace EmailSender
                 Recipient NewRecipient = new Recipient(adresses[row, 0].ToString(), adresses[row, 1].ToString());
                 ListofRecipients.Add(NewRecipient);
             }
-            Sender user = new Sender("Адрей", "no_other@mail.ru");
             double total = ListofRecipients.Count;
             double current = 0;
             double Value = 0;
@@ -133,16 +159,16 @@ namespace EmailSender
             {
                 try
                 {
-                    MailMessage NewMailMessage = new MailMessage(user.eMail, newrecipient.eMail);
+                    MailMessage NewMailMessage = new MailMessage(CurrentSender.eMail, newrecipient.eMail);
                     NewMailMessage.Subject = SubjectText;
                     NewMailMessage.Body = LetterText;
+                    if (!string.IsNullOrEmpty(AttachmentFileName)) NewMailMessage.Attachments.Add(new Attachment(AttachmentFileName));
                     // письмо представляет код html
                     NewMailMessage.IsBodyHtml = true;
                     // адрес smtp-сервера и порт, с которого будем отправлять письмо
-                    SmtpClient smtp = new SmtpClient("smtp.mail.ru", 587);
                     // логин и пароль
                     smtp.UseDefaultCredentials = false;
-                    smtp.Credentials = new NetworkCredential("no_other@mail.ru", "zpmhYxwc4D");
+                    smtp.Credentials = new NetworkCredential(CurrentSender.eMail.ToString(), CurrentSender.Password);
                     smtp.EnableSsl = true;
                     smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
                     smtp.Send(NewMailMessage);
@@ -158,7 +184,7 @@ namespace EmailSender
                     current++;
                 Value = (double)(current / total) * 100;
                 bgworker.ReportProgress((int)Value);
-                Thread.Sleep(200);
+                Thread.Sleep(Delay);
                 }
             }
         }
@@ -170,6 +196,8 @@ namespace EmailSender
         { 
             FileStream stream = null;
             object[,] adresses = null;
+            try
+            {
                 stream = File.Open(filename, FileMode.Open, FileAccess.Read);
                 using (IExcelDataReader excelReader = ExcelReaderFactory.CreateOpenXmlReader(stream))
                 {
@@ -180,9 +208,9 @@ namespace EmailSender
                     foreach (DataTable data in result.Tables)
                     {
                         object[,] exceldata = new object[data.Rows.Count, data.Columns.Count];
-                        for (int k = 0; k<data.Rows.Count; k++)
+                        for (int k = 0; k < data.Rows.Count; k++)
                         {
-                            for (int j = 0; j<data.Columns.Count; j++)
+                            for (int j = 0; j < data.Columns.Count; j++)
                             {
                                 exceldata[k, j] = data.Rows[k].ItemArray[j].ToString();
                                 ref object newdata = ref exceldata[k, j];
@@ -193,24 +221,61 @@ namespace EmailSender
                                     {
                                         newdata = null;
                                     }
-}
+                                }
                             }
                         }
-                    adresses = exceldata;
+                        adresses = exceldata;
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка при работе с файлом\n Если файл открыт в Excel, закройте его." + ex.Message, "Ошибка", MessageBoxButton.OK);
+            }
             return adresses;
             }
 
+        private void AttachmentBTN_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog();
+            dialog.FileName = ""; // Default file name
+            dialog.DefaultExt = "*.*"; // Default file extension
+            dialog.Filter = ""; // Filter files by extension
+                                                             // Show open file dialog box
+            bool? result = dialog.ShowDialog();
+
+            // Process open file dialog box results
+            if (result == true)
+            {
+                //Высчитываем размер файла. Переводим в килобайты.
+                if ((new System.IO.FileInfo(dialog.FileName).Length / 1024 < 24 * 1024)) AttachmentBOX.Text = dialog.FileName;
+                else MessageBox.Show("Размер файла превышает 24 МБ", "Ошибка", MessageBoxButton.OK);
+            }
+        }
     }
     public class Sender
     {
         public string Name { get; set; }
         public MailAddress eMail { get; set; }
-        public Sender(string Name, string Email)
+        public string Password { get; set; }
+        public Sender(string Name, string Email, string Password)
         {
             this.Name = Name;
             this.eMail = new MailAddress(Email);
+            this.Password = Password;
+        }
+
+    }
+
+    public class PostServer
+    {
+        public string Adress { get; set; }
+        public int Port{ get; set; }
+        public string Password { get; set; }
+        public PostServer(string Adress, int Port)
+        {
+            this.Adress = Adress;
+            this.Port = Port;
         }
 
     }

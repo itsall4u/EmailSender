@@ -5,11 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:EmailSender"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="EMailSender" Height="450" Width="800">
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" > 
+        <TabControl x:Name="tabControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <TabItem Header="Отправка">
+            <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="4*"/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -17,11 +21,14 @@
             <ColumnDefinition Width="2*"/>
             <ColumnDefinition Width="3*"/>
         </Grid.ColumnDefinitions>
-        <TextBlock Text="Тема письма" FontSize="20"  Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-        <TextBox x:Name="Subject" FontSize="20" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+        <TextBlock Text="Тема письма" FontSize="20"  Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+        <TextBox x:Name="Subject" FontSize="20" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
         <TextBlock Text="Текст письма" FontSize="20" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         <TextBox x:Name="Text" FontSize="20" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-        <Button x:Name="button" FontSize="30" Content="Send" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0"  Click="Button_Click" >
+        <TextBlock Text="Вложение" FontSize="20" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <TextBlock x:Name="AttachmentBOX" Text="" FontSize="20" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <Button x:Name="AttachmentBTN" Content="..." ToolTip="Добавить вложение" FontSize="20" Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Width="50" Click="AttachmentBTN_Click" />
+        <Button x:Name="button" FontSize="20" Content="Отправить" ToolTip="Выбрать адресатов и отправить" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="3" Grid.Column="0"  Click="Button_Click" >
             <Button.Style>
                 <Style TargetType="Button">
                     <Setter Property="IsEnabled" Value="True" />
@@ -36,9 +43,45 @@
                 </Style>
             </Button.Style>
         </Button>
-        <TextBlock  x:Name="lblStatus" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" />
-        <ProgressBar x:Name="pb1" IsIndeterminate="false"   Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Height="20" Width="300"/>
+        <TextBlock  x:Name="lblStatus" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" />
+        <ProgressBar x:Name="pb1" IsIndeterminate="false"   Grid.Row="3" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Height="20" Width="300"/>
+
+                </Grid>
+            </TabItem>
+
+        <TabItem Header="Настройки">
+                <Grid >
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="3*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="2*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Адрес сервера" FontSize="20" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="Порт" FontSize="20" Grid.Row="0" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="Сервер исходящей почты" FontSize="20" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBox x:Name="SMTPBox" Text="smtp.mail.ru" FontSize="20" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
+                    <TextBox x:Name="PortBox" Text="587" FontSize="20" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
+                    <TextBlock Text="Учетная запись" FontSize="20" Grid.Row="3" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="Адрес почты" FontSize="20" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="Пароль" FontSize="20" Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBox x:Name="EmailAdressBOX" Text="no_other@mail.ru" FontSize="20" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
+                    <PasswordBox x:Name="PSWDBOX" Password="zpmhYxwc4D" FontSize="20" Grid.Row="3" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Center" />
+                    <TextBlock Text="Задержка отправки писем" FontSize="20" Grid.Row="4" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBox x:Name="DelayBox" Text="200"  ToolTip="Пауза между отправками писем, чтобы сервер не забанил" FontSize="20" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
+                    <TextBlock Text="мс" FontSize="20" Grid.Row="4" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                </Grid>
+            </TabItem>
+    </TabControl>
+        </Grid>
 
 
-    </Grid>
+   
 </Window>
