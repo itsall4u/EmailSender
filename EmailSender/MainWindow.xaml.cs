@@ -75,7 +75,7 @@ namespace EmailSender
             var dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.FileName = "Excel Document"; // Default file name
             dialog.DefaultExt = ".xlsx"; // Default file extension
-            dialog.Filter = "Text documents (.xlsx)|*.xlsx"; // Filter files by extension
+            dialog.Filter = "Text documents (.xls or .xlsx)|*.xls; *.xlsx"; // Filter files by extension
                                                              // Show open file dialog box
             bool? result = dialog.ShowDialog();
 
@@ -85,13 +85,13 @@ namespace EmailSender
                 // Open document
                 lblStatus.Foreground = Brushes.Black;
                 filename = dialog.FileName;
+                bgworker.WorkerSupportsCancellation = true;
+                bgworker.WorkerReportsProgress = true;
+                bgworker.DoWork += Worker_DoWork;
+                bgworker.ProgressChanged += Worker_ProgressChanged;
+                bgworker.RunWorkerCompleted += Worker_RunWorkerCompleted;
+                bgworker.RunWorkerAsync();
             }
-            bgworker.WorkerSupportsCancellation = true;
-            bgworker.WorkerReportsProgress = true;
-            bgworker.DoWork += Worker_DoWork;
-            bgworker.ProgressChanged += Worker_ProgressChanged;
-            bgworker.RunWorkerCompleted += Worker_RunWorkerCompleted;
-            bgworker.RunWorkerAsync();
         }
         void Worker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
@@ -100,16 +100,20 @@ namespace EmailSender
         }
         void Worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            bgworker.DoWork -= Worker_DoWork;
-            bgworker.ProgressChanged -= Worker_ProgressChanged;
-            bgworker.RunWorkerCompleted -= Worker_RunWorkerCompleted;
             if (e.Cancelled)
             {
                 lblStatus.Foreground = Brushes.Red;
                 lblStatus.Text = "Отменено";
+                bgworker.DoWork -= Worker_DoWork;
+                bgworker.ProgressChanged -= Worker_ProgressChanged;
+                bgworker.RunWorkerCompleted -= Worker_RunWorkerCompleted;
+                MessageBox.Show("Во время отправки сообщений произошел сбой", "Ошибка", MessageBoxButton.OK);
             }
             else
             {
+                bgworker.DoWork -= Worker_DoWork;
+                bgworker.ProgressChanged -= Worker_ProgressChanged;
+                bgworker.RunWorkerCompleted -= Worker_RunWorkerCompleted;
                 lblStatus.Foreground = Brushes.Green;
                 lblStatus.Text = "Выполнено: " + e.Result;
                 if (ListOfErrors.Count > 0)
@@ -147,45 +151,53 @@ namespace EmailSender
         {
             object[,] adresses = GetData(filename);
             List<Recipient> ListofRecipients = new List<Recipient>();
-            for (int row = 0; row <= adresses.GetUpperBound(0); row++)
+            if (adresses != null)
             {
-                Recipient NewRecipient = new Recipient(adresses[row, 0].ToString(), adresses[row, 1].ToString());
-                ListofRecipients.Add(NewRecipient);
+                for (int row = 0; row <= adresses.GetUpperBound(0); row++)
+                {
+                    Recipient NewRecipient = new Recipient(adresses[row, 0].ToString(), adresses[row, 1].ToString());
+                    ListofRecipients.Add(NewRecipient);
+                }
+                double total = ListofRecipients.Count;
+                double current = 0;
+                double Value = 0;
+                foreach (Recipient newrecipient in ListofRecipients)
+                {
+                    try
+                    {
+                        MailMessage NewMailMessage = new MailMessage(CurrentSender.eMail, newrecipient.eMail);
+                        NewMailMessage.Subject = SubjectText;
+                        NewMailMessage.Body = LetterText;
+                        if (!string.IsNullOrEmpty(AttachmentFileName)) NewMailMessage.Attachments.Add(new Attachment(AttachmentFileName));
+                        // письмо представляет код html
+                        NewMailMessage.IsBodyHtml = true;
+                        // адрес smtp-сервера и порт, с которого будем отправлять письмо
+                        // логин и пароль
+                        smtp.UseDefaultCredentials = false;
+                        smtp.Credentials = new NetworkCredential(CurrentSender.eMail.ToString(), CurrentSender.Password);
+                        smtp.EnableSsl = true;
+                        smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
+                        smtp.Send(NewMailMessage);
+                    }
+                    catch
+                    {
+                        string header = newrecipient.eMail.ToString();
+                        string text = "Sending failed";
+                        ListOfErrors.Add(new KeyValuePair<string, string>(header, text));
+                    }
+                    finally
+                    {
+                        current++;
+                        Value = (double)(current / total) * 100;
+                        bgworker.ReportProgress((int)Value);
+                        Thread.Sleep(Delay);
+                    }
+                }
             }
-            double total = ListofRecipients.Count;
-            double current = 0;
-            double Value = 0;
-            foreach (Recipient newrecipient in ListofRecipients)
+            else
             {
-                try
-                {
-                    MailMessage NewMailMessage = new MailMessage(CurrentSender.eMail, newrecipient.eMail);
-                    NewMailMessage.Subject = SubjectText;
-                    NewMailMessage.Body = LetterText;
-                    if (!string.IsNullOrEmpty(AttachmentFileName)) NewMailMessage.Attachments.Add(new Attachment(AttachmentFileName));
-                    // письмо представляет код html
-                    NewMailMessage.IsBodyHtml = true;
-                    // адрес smtp-сервера и порт, с которого будем отправлять письмо
-                    // логин и пароль
-                    smtp.UseDefaultCredentials = false;
-                    smtp.Credentials = new NetworkCredential(CurrentSender.eMail.ToString(), CurrentSender.Password);
-                    smtp.EnableSsl = true;
-                    smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
-                    smtp.Send(NewMailMessage);
-                }
-                catch
-                {
-                    string header = newrecipient.eMail.ToString();
-                    string text = "Sending failed";
-                    ListOfErrors.Add(new KeyValuePair<string, string>(header, text));
-                }
-                finally
-                {
-                    current++;
-                Value = (double)(current / total) * 100;
-                bgworker.ReportProgress((int)Value);
-                Thread.Sleep(Delay);
-                }
+                bgworker.CancelAsync();
+                e.Cancel = true;
             }
         }
 
@@ -193,13 +205,18 @@ namespace EmailSender
 
 
             public object[,] GetData(string filename)
-        { 
+        {
+            IExcelDataReader excelReader;
+            var fileinfo = new FileInfo(filename);
             FileStream stream = null;
             object[,] adresses = null;
             try
             {
                 stream = File.Open(filename, FileMode.Open, FileAccess.Read);
-                using (IExcelDataReader excelReader = ExcelReaderFactory.CreateOpenXmlReader(stream))
+                if (fileinfo.Extension.Equals(".xls")) excelReader = ExcelDataReader.ExcelReaderFactory.CreateBinaryReader(stream);
+                else if (fileinfo.Extension.Equals(".xlsx")) excelReader = ExcelDataReader.ExcelReaderFactory.CreateOpenXmlReader(stream);
+                else throw new Exception("Неверный формат файла");
+                using (excelReader)
                 {
                     DataSet result = excelReader.AsDataSet();
                     excelReader.Close();
