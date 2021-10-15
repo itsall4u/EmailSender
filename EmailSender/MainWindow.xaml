@@ -45,7 +45,9 @@
         </Button>
         <TextBlock  x:Name="lblStatus" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" />
         <ProgressBar x:Name="pb1" IsIndeterminate="false"   Grid.Row="3" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Height="20" Width="300"/>
-
+                    <Popup x:Name="popupdelay" Grid.Row="1" Grid.Column="2">
+                        <Label Name="lblTime" FontSize="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Popup>
                 </Grid>
             </TabItem>
 

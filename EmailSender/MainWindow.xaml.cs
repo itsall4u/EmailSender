@@ -21,6 +21,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Collections.Concurrent;
+using System.Windows.Threading;
 
 namespace EmailSender
 {
@@ -29,9 +30,10 @@ namespace EmailSender
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
-        private ConcurrentBag<KeyValuePair<string, string>> ListOfErrors = new ConcurrentBag<KeyValuePair<string, string>>();
+        private ConcurrentBag<KeyValuePair<string, string>> ListOfErrors;
         private readonly BackgroundWorker bgworker = new BackgroundWorker();
         private string LogFile = @"D:\log.txt";
+        private int ShowDelay;
         private string SendError = string.Empty;
         private Sender CurrentSender;
         private SmtpClient smtp;
@@ -149,6 +151,7 @@ namespace EmailSender
         }
         void Worker_DoWork(object sender, DoWorkEventArgs e)
         {
+            ListOfErrors = new ConcurrentBag<KeyValuePair<string, string>>();
             object[,] adresses = GetData(filename);
             List<Recipient> ListofRecipients = new List<Recipient>();
             if (adresses != null)
@@ -161,11 +164,13 @@ namespace EmailSender
                 double total = ListofRecipients.Count;
                 double current = 0;
                 double Value = 0;
+                int i = 0;
                 foreach (Recipient newrecipient in ListofRecipients)
                 {
                     try
                     {
                         MailMessage NewMailMessage = new MailMessage(CurrentSender.eMail, newrecipient.eMail);
+                        string test = CurrentSender.eMail.DisplayName;
                         NewMailMessage.Subject = SubjectText;
                         NewMailMessage.Body = LetterText;
                         if (!string.IsNullOrEmpty(AttachmentFileName)) NewMailMessage.Attachments.Add(new Attachment(AttachmentFileName));
@@ -174,23 +179,34 @@ namespace EmailSender
                         // адрес smtp-сервера и порт, с которого будем отправлять письмо
                         // логин и пароль
                         smtp.UseDefaultCredentials = false;
-                        smtp.Credentials = new NetworkCredential(CurrentSender.eMail.ToString(), CurrentSender.Password);
+                        smtp.Credentials = new NetworkCredential(CurrentSender.eMail.Address.ToString(), CurrentSender.Password);
                         smtp.EnableSsl = true;
                         smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
                         smtp.Send(NewMailMessage);
                     }
-                    catch
+                    catch (Exception ex)
                     {
                         string header = newrecipient.eMail.ToString();
                         string text = "Sending failed";
+                        string text2 = ex.Message;
                         ListOfErrors.Add(new KeyValuePair<string, string>(header, text));
                     }
                     finally
                     {
+                        i++;
                         current++;
                         Value = (double)(current / total) * 100;
                         bgworker.ReportProgress((int)Value);
-                        Thread.Sleep(Delay);
+                        if ((i % 100 == 0) & (i<400))
+                        {
+                            ShowDelay = 20 * 1000 * 60;
+                            Thread.Sleep(20 * 1000 * 60);
+                        }
+                        else
+                        {
+                            ShowDelay = Delay;
+                            Thread.Sleep(Delay);
+                        }
                     }
                 }
             }
@@ -203,8 +219,7 @@ namespace EmailSender
 
 
 
-
-            public object[,] GetData(string filename)
+        public object[,] GetData(string filename)
         {
             IExcelDataReader excelReader;
             var fileinfo = new FileInfo(filename);
@@ -278,7 +293,7 @@ namespace EmailSender
         public Sender(string Name, string Email, string Password)
         {
             this.Name = Name;
-            this.eMail = new MailAddress(Email);
+            this.eMail = new MailAddress(Email, Name);
             this.Password = Password;
         }
 
