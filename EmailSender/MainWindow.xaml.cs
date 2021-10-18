@@ -71,7 +71,7 @@ namespace EmailSender
             LetterText = Text.Text;
             SubjectText = Subject.Text;
             AttachmentFileName = AttachmentBOX.Text;
-            CurrentSender = new Sender("Кафедра ФН-3", EmailAdressBOX.Text, PSWDBOX.Password);
+            CurrentSender = new Sender(FromBOX.Text, EmailAdressBOX.Text, PSWDBOX.Password);
             if (!string.IsNullOrEmpty(DelayBox.Text)) Delay = int.Parse(DelayBox.Text);
             smtp = new SmtpClient(SMTPBox.Text, int.Parse(PortBox.Text));
             var dialog = new Microsoft.Win32.OpenFileDialog();
@@ -164,15 +164,22 @@ namespace EmailSender
                 double total = ListofRecipients.Count;
                 double current = 0;
                 double Value = 0;
-                int i = 0;
-                foreach (Recipient newrecipient in ListofRecipients)
+                for (int i = 0; i < ListofRecipients.Count; i++)
                 {
                     try
                     {
-                        MailMessage NewMailMessage = new MailMessage(CurrentSender.eMail, newrecipient.eMail);
-                        string test = CurrentSender.eMail.DisplayName;
-                        NewMailMessage.Subject = SubjectText;
+                        MailMessage NewMailMessage = new MailMessage(CurrentSender.eMail, ListofRecipients[i].eMail);
+                        NewMailMessage.Subject = SubjectText + " " + i.ToString();
                         NewMailMessage.Body = LetterText;
+                        for (int y = i+1; (y < ListofRecipients.Count & y < i+5); y++)
+                        {
+                            NewMailMessage.To.Add(ListofRecipients[y].eMail);
+                            current = y;
+                        }
+                        i = (int)current;
+                        current = i+1;
+                        Value = (double)(current / total) * 100;
+                        bgworker.ReportProgress((int)Value);
                         if (!string.IsNullOrEmpty(AttachmentFileName)) NewMailMessage.Attachments.Add(new Attachment(AttachmentFileName));
                         // письмо представляет код html
                         NewMailMessage.IsBodyHtml = true;
@@ -186,28 +193,25 @@ namespace EmailSender
                     }
                     catch (Exception ex)
                     {
-                        string header = newrecipient.eMail.ToString();
+                        string header = ListofRecipients[i].eMail.ToString();
                         string text = "Sending failed";
                         string text2 = ex.Message;
                         ListOfErrors.Add(new KeyValuePair<string, string>(header, text));
                     }
                     finally
                     {
-                        i++;
-                        current++;
-                        Value = (double)(current / total) * 100;
-                        bgworker.ReportProgress((int)Value);
-                        if ((i % 100 == 0) & (i<400))
-                        {
-                            ShowDelay = 20 * 1000 * 60;
-                            Thread.Sleep(20 * 1000 * 60);
-                        }
-                        else
-                        {
-                            ShowDelay = Delay;
-                            Thread.Sleep(Delay);
-                        }
-                    }
+
+                        //if ((i % 200 == 0) & (i < 400))
+                        //{
+                        //    ShowDelay = 40 * 1000 * 60;
+                        //    Thread.Sleep(40 * 1000 * 60);
+                        //}
+                        //else
+                        //{
+                        //    ShowDelay = Delay;
+                        //    Thread.Sleep(Delay);
+                        //}
+                     }
                 }
             }
             else
@@ -309,7 +313,6 @@ namespace EmailSender
             this.Adress = Adress;
             this.Port = Port;
         }
-
     }
 
 

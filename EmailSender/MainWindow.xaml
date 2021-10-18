@@ -59,6 +59,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
                         <RowDefinition Height="3*"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
@@ -66,19 +67,21 @@
                         <ColumnDefinition Width="2*"/>
                         <ColumnDefinition Width="2*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Адрес сервера" FontSize="20" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <TextBlock Text="Порт" FontSize="20" Grid.Row="0" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <TextBlock Text="Сервер исходящей почты" FontSize="20" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <TextBox x:Name="SMTPBox" Text="smtp.mail.ru" FontSize="20" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
-                    <TextBox x:Name="PortBox" Text="587" FontSize="20" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
-                    <TextBlock Text="Учетная запись" FontSize="20" Grid.Row="3" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <TextBlock Text="Адрес почты" FontSize="20" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <TextBlock Text="Пароль" FontSize="20" Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <TextBox x:Name="EmailAdressBOX" Text="no_other@mail.ru" FontSize="20" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
-                    <PasswordBox x:Name="PSWDBOX" Password="zpmhYxwc4D" FontSize="20" Grid.Row="3" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Center" />
-                    <TextBlock Text="Задержка отправки писем" FontSize="20" Grid.Row="4" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <TextBox x:Name="DelayBox" Text="200"  ToolTip="Пауза между отправками писем, чтобы сервер не забанил" FontSize="20" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
-                    <TextBlock Text="мс" FontSize="20" Grid.Row="4" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <TextBlock Text="Отправить письмо от" FontSize="20" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBox x:Name="FromBOX" Text="Кафедра ФН-3" FontSize="20" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
+                    <TextBlock Text="Адрес сервера" FontSize="20" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="Порт" FontSize="20" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="Сервер исходящей почты" FontSize="20" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBox x:Name="SMTPBox" Text="smtp.mail.ru" FontSize="20" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
+                    <TextBox x:Name="PortBox" Text="587" FontSize="20" Grid.Row="2" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
+                    <TextBlock Text="Учетная запись" FontSize="20" Grid.Row="4" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="Адрес почты" FontSize="20" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="Пароль" FontSize="20" Grid.Row="3" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBox x:Name="EmailAdressBOX" Text="no_other@mail.ru" FontSize="20" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
+                    <PasswordBox x:Name="PSWDBOX" Password="zpmhYxwc4D" FontSize="20" Grid.Row="4" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Center" />
+                    <TextBlock Text="Задержка отправки писем" FontSize="20" Grid.Row="5" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBox x:Name="DelayBox" Text="200"  ToolTip="Пауза между отправками писем, чтобы сервер не забанил" FontSize="20" Grid.Row="5" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center"/>
+                    <TextBlock Text="мс" FontSize="20" Grid.Row="5" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                 </Grid>
             </TabItem>
     </TabControl>
