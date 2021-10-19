@@ -22,6 +22,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.Windows.Threading;
+using System.Text.RegularExpressions;
 
 namespace EmailSender
 {
@@ -33,11 +34,11 @@ namespace EmailSender
         private ConcurrentBag<KeyValuePair<string, string>> ListOfErrors;
         private readonly BackgroundWorker bgworker = new BackgroundWorker();
         private string LogFile = @"D:\log.txt";
-        private int ShowDelay;
+        private int MailCount = 15;
         private string SendError = string.Empty;
         private Sender CurrentSender;
         private SmtpClient smtp;
-        private int Delay = 200;
+        private int Delay = 250;
         private string AttachmentFileName = string.Empty;
         private string SubjectText;
         private string LetterText;
@@ -64,10 +65,19 @@ namespace EmailSender
         {
             DataContext = this;
             InitializeComponent();
+            DelayBox.Text = Delay.ToString();
+            MailCountBOX.Text = MailCount.ToString();
+        }
+
+        private void NumberValidationTextBox(object sender, TextCompositionEventArgs e)
+        {
+            Regex regex = new Regex("[^0-9]+");
+            e.Handled = regex.IsMatch(e.Text);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            MailCount = (!string.IsNullOrEmpty(MailCountBOX.Text)) ? (int.Parse(MailCountBOX.Text) > 30) ? 30 : int.Parse(MailCountBOX.Text) : 10;
             LetterText = Text.Text;
             SubjectText = Subject.Text;
             AttachmentFileName = AttachmentBOX.Text;
@@ -151,6 +161,7 @@ namespace EmailSender
         }
         void Worker_DoWork(object sender, DoWorkEventArgs e)
         {
+            List<string> SendingMailList = new List<string>();
             ListOfErrors = new ConcurrentBag<KeyValuePair<string, string>>();
             object[,] adresses = GetData(filename);
             List<Recipient> ListofRecipients = new List<Recipient>();
@@ -171,7 +182,7 @@ namespace EmailSender
                         MailMessage NewMailMessage = new MailMessage(CurrentSender.eMail, ListofRecipients[i].eMail);
                         NewMailMessage.Subject = SubjectText + " " + i.ToString();
                         NewMailMessage.Body = LetterText;
-                        for (int y = i+1; (y < ListofRecipients.Count & y < i+5); y++)
+                        for (int y = i+1; (y < ListofRecipients.Count & y < i+MailCount); y++)
                         {
                             NewMailMessage.To.Add(ListofRecipients[y].eMail);
                             current = y;
@@ -190,6 +201,10 @@ namespace EmailSender
                         smtp.EnableSsl = true;
                         smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
                         smtp.Send(NewMailMessage);
+                        //foreach (MailAddress adress in NewMailMessage.To)
+                        //{
+                        //    SendingMailList.Add(adress.Address);
+                        //}
                     }
                     catch (Exception ex)
                     {
@@ -209,9 +224,10 @@ namespace EmailSender
                         //else
                         //{
                         //    ShowDelay = Delay;
-                        //    Thread.Sleep(Delay);
+                        //    
                         //}
-                     }
+                        Thread.Sleep(Delay);
+                    }
                 }
             }
             else
@@ -220,9 +236,6 @@ namespace EmailSender
                 e.Cancel = true;
             }
         }
-
-
-
         public object[,] GetData(string filename)
         {
             IExcelDataReader excelReader;
